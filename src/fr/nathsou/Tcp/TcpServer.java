@@ -173,7 +173,7 @@ public class TcpServer extends Thread{
         listenerList.add(ClientDisconnectedListener.class, listener);
     }
 
-    public void removeDisclientConnectedListener(ClientDisconnectedListener listener) {
+    public void removeClientDisconnectedListener(ClientDisconnectedListener listener) {
         listenerList.remove(ClientDisconnectedListener.class, listener);
     }
 

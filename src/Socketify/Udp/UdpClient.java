@@ -118,8 +118,7 @@ public class UdpClient extends Thread{
         new Thread(new Runnable() {
             @Override
             public void run() {
-                boolean goOn = true;
-                while(goOn) {
+                while(!interrupted()) {
                     try {
                         Thread.sleep(waitTimeMs);
                     } catch (InterruptedException ie) {

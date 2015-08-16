@@ -1,3 +1,3 @@
 # Socketify
-Leightweight TCP and UDP Java network library.
+Lightweight TCP and UDP Java network library.
 

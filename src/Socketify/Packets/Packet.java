@@ -1,8 +1,7 @@
-package fr.nathsou.Packets;
+package Socketify.Packets;
 
 
-import com.sun.scenario.Settings;
-import fr.nathsou.Socketify.SocketifyServer;
+import Socketify.Socketify.SocketifyServer;
 
 import java.io.*;
 import java.util.zip.DeflaterOutputStream;
@@ -28,8 +27,16 @@ public class Packet implements Serializable{
         return content;
     }
 
-    public void setType(short type) {
+    public void setType(int type) {
+        this.type = (short) type;
+    }
+
+    public void setType(short type){
         this.type = type;
+    }
+
+    public void setContent(Object content) {
+        this.content = content;
     }
 
     public short getType() {

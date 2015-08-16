@@ -1,9 +1,9 @@
-package fr.nathsou.Socketify;
+package Socketify.Socketify;
 
-import fr.nathsou.Packets.Packet;
-import fr.nathsou.Tcp.Client;
-import fr.nathsou.Tcp.TcpServer;
-import fr.nathsou.Udp.UdpServer;
+import Socketify.Tcp.Client;
+import Socketify.Tcp.TcpServer;
+import Socketify.Packets.Packet;
+import Socketify.Udp.UdpServer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ public class SocketifyServer {
 
     public SocketifyServer(int tcpPort, int udpPort){
         tcpServer = new TcpServer(tcpPort);
-        udpServer = new UdpServer(udpPort);
+        //udpServer = new UdpServer(udpPort);
     }
 
     public void sendToAll(Object obj, Type type) throws IOException{
@@ -30,7 +30,7 @@ public class SocketifyServer {
                 tcpServer.sendToAll(obj);
                 break;
             case UDP:
-                udpServer.sendToAll(new Packet(obj, -1));
+                //udpServer.sendToAll(new Packet(obj, -1));
                 break;
             default:
                 break;

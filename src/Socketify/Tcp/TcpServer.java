@@ -1,13 +1,13 @@
-package fr.nathsou.Tcp;
+package Socketify.Tcp;
 
-import fr.nathsou.Events.ClientConnectedEvent.ClientConnectedEvent;
-import fr.nathsou.Events.ClientConnectedEvent.ClientConnectedListener;
-import fr.nathsou.Events.ClientDisconnectedEvent.ClientDisconnectedEvent;
-import fr.nathsou.Events.ClientDisconnectedEvent.ClientDisconnectedListener;
-import fr.nathsou.Events.PacketReceivedEvent.PacketReceivedEvent;
-import fr.nathsou.Events.PacketReceivedEvent.PacketReceivedListener;
-import fr.nathsou.Packets.Packet;
-import fr.nathsou.Socketify.SocketifyServer;
+import Socketify.Events.ClientConnectedEvent.ClientConnectedListener;
+import Socketify.Events.PacketReceivedEvent.PacketReceivedListener;
+import Socketify.Events.ClientConnectedEvent.ClientConnectedEvent;
+import Socketify.Events.ClientDisconnectedEvent.ClientDisconnectedEvent;
+import Socketify.Events.ClientDisconnectedEvent.ClientDisconnectedListener;
+import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
+import Socketify.Packets.Packet;
+import Socketify.Socketify.SocketifyServer;
 
 import javax.swing.event.EventListenerList;
 import java.io.IOException;
@@ -25,9 +25,9 @@ public class TcpServer extends Thread{
 
     private int port;
     private ServerSocket serverSocket;
-    private EventListenerList listenerList;
     private int id = 0;
     private Socket connection;
+    private EventListenerList listenerList = new EventListenerList();
 
     public TcpServer(int port){
 
@@ -39,7 +39,6 @@ public class TcpServer extends Thread{
             ioe.printStackTrace();
         }
         SocketifyServer.clients = new ArrayList<>();
-        listenerList = new EventListenerList();
     }
 
     public void listen(){
@@ -67,11 +66,15 @@ public class TcpServer extends Thread{
                         while(true){
                             try{
                                 Packet packet = (Packet) client.readObject();
-                                firePacketReceivedEvent(new PacketReceivedEvent(this, packet, client.getId()));
+                                firePacketReceivedEvent(new PacketReceivedEvent(this, packet));
                             }catch (ClassNotFoundException cnf){
                                 cnf.printStackTrace();
                             }catch (IOException ioe){
-                                client.close();
+                                try {
+                                    client.close();
+                                }catch (IOException ioe2){
+                                    ioe2.printStackTrace();
+                                }
                                 SocketifyServer.clients.remove(client);
                                 fireClientDisconnectedEvent(new ClientDisconnectedEvent(this, client.getId()));
                                 break;
@@ -148,13 +151,15 @@ public class TcpServer extends Thread{
         return SocketifyServer.clients.size();
     }
 
+    //Events
+
     //ClientConnected Event
 
     public void addClientConnectedListener(ClientConnectedListener listener) {
         listenerList.add(ClientConnectedListener.class, listener);
     }
 
-    public void removeClientConnectedListener(ClientConnectedListener listener) {
+    private void removeClientConnectedListener(ClientConnectedListener listener) {
         listenerList.remove(ClientConnectedListener.class, listener);
     }
 
@@ -173,7 +178,7 @@ public class TcpServer extends Thread{
         listenerList.add(ClientDisconnectedListener.class, listener);
     }
 
-    public void removeClientDisconnectedListener(ClientDisconnectedListener listener) {
+    private void removeClientDisconnectedListener(ClientDisconnectedListener listener) {
         listenerList.remove(ClientDisconnectedListener.class, listener);
     }
 
@@ -192,7 +197,7 @@ public class TcpServer extends Thread{
         listenerList.add(PacketReceivedListener.class, listener);
     }
 
-    public void removePacketReceivedListener(PacketReceivedListener listener) {
+    private void removePacketReceivedListener(PacketReceivedListener listener) {
         listenerList.remove(PacketReceivedListener.class, listener);
     }
 
@@ -204,6 +209,5 @@ public class TcpServer extends Thread{
             }
         }
     }
-
 
 }

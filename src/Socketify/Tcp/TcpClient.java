@@ -1,8 +1,8 @@
-package fr.nathsou.Tcp;
+package Socketify.Tcp;
 
-import fr.nathsou.Events.PacketReceivedEvent.PacketReceivedEvent;
-import fr.nathsou.Events.PacketReceivedEvent.PacketReceivedListener;
-import fr.nathsou.Packets.Packet;
+import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
+import Socketify.Events.PacketReceivedEvent.PacketReceivedListener;
+import Socketify.Packets.Packet;
 
 import javax.swing.event.EventListenerList;
 import java.io.*;
@@ -55,7 +55,7 @@ public class TcpClient {
                         while(connected){
                             try {
                                 Packet packet = (Packet) in.readObject();
-                                firePacketReceivedEvent(new PacketReceivedEvent(this, packet, 0)); //0 -> Server
+                                firePacketReceivedEvent(new PacketReceivedEvent(this, packet));
                             }catch (ClassNotFoundException cnf) {
                                 cnf.printStackTrace();
                             }catch (SocketException se){

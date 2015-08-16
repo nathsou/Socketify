@@ -1,4 +1,4 @@
-package fr.nathsou.Events.ClientConnectedEvent;
+package Socketify.Events.ClientConnectedEvent;
 
 import java.util.EventListener;
 

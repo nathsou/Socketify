@@ -1,4 +1,4 @@
-package fr.nathsou.Events.CallbackPacketReceived;
+package Socketify.Events.CallbackPacketReceived;
 
 import java.util.EventListener;
 

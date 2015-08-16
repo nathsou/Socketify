@@ -1,4 +1,4 @@
-package fr.nathsou.Tcp;
+package Socketify.Tcp;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -14,6 +14,7 @@ public class Client {
     private ObjectInputStream in;
     private ObjectOutputStream out;
     private InetAddress address;
+    private int port;
 
     public Client(Socket socket, int id) throws IOException{
         this.id = id;
@@ -21,25 +22,18 @@ public class Client {
         out.flush();
         in = new ObjectInputStream(socket.getInputStream());
         address = socket.getInetAddress();
+        port = socket.getPort();
     }
 
     public Client(InetAddress address, int id, int port) throws IOException{
         this.id = id;
-        socket = new Socket(address, port);
-        out = new ObjectOutputStream(socket.getOutputStream());
-        out.flush();
-        in = new ObjectInputStream(socket.getInputStream());
+        this.port = port;
         this.address = address;
     }
 
-    public void close(){
-        try {
-            out.close();
-            in.close();
-            //socket.close();
-        }catch (IOException ioe){
-            ioe.printStackTrace();
-        }
+    public void close() throws IOException{
+        if(out != null) out.close();
+        if(in != null) in.close();
     }
 
     //Getters & Setters
@@ -49,15 +43,30 @@ public class Client {
         return id;
     }
 
-    public Socket getSocket() {
+    public Socket getSocket() throws IOException{
+
+        if(socket != null) socket = new Socket(address, port);
+
         return socket;
     }
 
-    public ObjectInputStream getObjectInputStream() {
+    public int getPort() {
+        return port;
+    }
+
+    public ObjectInputStream getObjectInputStream() throws IOException{
+
+        if(socket != null) socket = new Socket(address, port);
+        if(in != null) in = new ObjectInputStream(socket.getInputStream());
+
         return in;
     }
 
-    public ObjectOutputStream getObjectOutputStream() {
+    public ObjectOutputStream getObjectOutputStream() throws IOException{
+
+        if(socket != null) socket = new Socket(address, port);
+        if(out != null) out = new ObjectOutputStream(socket.getOutputStream());
+        out.flush();
         return out;
     }
 

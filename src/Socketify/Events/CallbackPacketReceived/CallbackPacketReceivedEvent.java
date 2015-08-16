@@ -1,6 +1,6 @@
-package fr.nathsou.Events.CallbackPacketReceived;
+package Socketify.Events.CallbackPacketReceived;
 
-import fr.nathsou.Packets.Packet;
+import Socketify.Packets.Packet;
 
 import java.util.EventObject;
 

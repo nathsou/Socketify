@@ -1,4 +1,4 @@
-package fr.nathsou.Events.ClientDisconnectedEvent;
+package Socketify.Events.ClientDisconnectedEvent;
 
 import java.util.EventListener;
 

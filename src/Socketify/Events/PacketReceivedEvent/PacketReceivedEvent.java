@@ -1,6 +1,6 @@
-package fr.nathsou.Events.PacketReceivedEvent;
+package Socketify.Events.PacketReceivedEvent;
 
-import fr.nathsou.Packets.Packet;
+import Socketify.Packets.Packet;
 
 import java.util.EventObject;
 
@@ -12,11 +12,11 @@ public class PacketReceivedEvent extends EventObject{
     private Packet packet;
     private int senderId;
 
-    public PacketReceivedEvent(Object source, Packet packet, int senderId) {
+    public PacketReceivedEvent(Object source, Packet packet) {
         super(source);
 
         this.packet = packet;
-        this.senderId = senderId;
+        senderId = packet.getSenderId();
     }
 
     public Packet getPacket() {

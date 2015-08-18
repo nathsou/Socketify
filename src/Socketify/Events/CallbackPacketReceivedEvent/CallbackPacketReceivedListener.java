@@ -1,4 +1,4 @@
-package Socketify.Events.CallbackPacketReceived;
+package Socketify.Events.CallbackPacketReceivedEvent;
 
 import java.util.EventListener;
 

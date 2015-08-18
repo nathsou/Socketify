@@ -6,6 +6,8 @@ import Socketify.Events.ClientDisconnectedEvent.ClientDisconnectedEvent;
 import Socketify.Events.ClientDisconnectedEvent.ClientDisconnectedListener;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedListener;
+import Socketify.Events.PacketSentEvent.PacketSentEvent;
+import Socketify.Events.PacketSentEvent.PacketSentListener;
 import Socketify.Tcp.TClient;
 import Socketify.Tcp.TcpServer;
 import Socketify.Udp.UClient;
@@ -31,18 +33,18 @@ public class SocketifyServer {
 
     private EventListenerList listenerList;
 
-    public SocketifyServer(int tcpPort, int udpPort) throws UnknownHostException{
+    public SocketifyServer(int tcpPort, int udpPort) throws UnknownHostException {
         tcpServer = new TcpServer(tcpPort);
         udpServer = new UdpServer(udpPort);
         udpEnabled = true;
         listenerList = new EventListenerList();
     }
 
-    public SocketifyServer(int tcpPort) throws UnknownHostException{
+    public SocketifyServer(int tcpPort) throws UnknownHostException {
         tcpServer = new TcpServer(tcpPort);
     }
 
-    public void listen(){
+    public void listen() {
         tcpServer.listen();
 
         tcpServer.addClientConnectedListener(new ClientConnectedListener() {
@@ -69,7 +71,15 @@ public class SocketifyServer {
             }
         });
 
-        if(udpEnabled) {
+        tcpServer.addPacketSentListener(new PacketSentListener() {
+            @Override
+            public void PacketSent(PacketSentEvent packetSentEvent) {
+                packetSentEvent.setProtocol(ProtocolType.TCP);
+                firePacketSentEvent(packetSentEvent);
+            }
+        });
+
+        if (udpEnabled) {
             udpServer.listen();
 
             udpServer.addClientConnectedListener(new ClientConnectedListener() {
@@ -95,16 +105,24 @@ public class SocketifyServer {
                     fireClientDisconnectedEvent(clientDisconnectedEvent);
                 }
             });
+
+            udpServer.addPacketSentListener(new PacketSentListener() {
+                @Override
+                public void PacketSent(PacketSentEvent packetSentEvent) {
+                    packetSentEvent.setProtocol(ProtocolType.UDP);
+                    firePacketSentEvent(packetSentEvent);
+                }
+            });
         }
     }
 
-    public void close(){
+    public void close() {
         tcpServer.close();
-        if(udpEnabled) udpServer.close();
+        if (udpEnabled) udpServer.close();
     }
 
-    public void sendToAll(Object obj, ProtocolType type) throws IOException{
-        switch (type){
+    public void sendToAll(Object obj, ProtocolType type) throws IOException {
+        switch (type) {
             case TCP:
                 tcpServer.sendToAll(obj);
                 break;
@@ -181,6 +199,25 @@ public class SocketifyServer {
         for (int i = 0; i < listeners.length; i += 2) {
             if (listeners[i] == PacketReceivedListener.class) {
                 ((PacketReceivedListener) listeners[i + 1]).PacketReceived(event);
+            }
+        }
+    }
+
+    //PacketSent Event
+
+    public void addPacketSentListener(PacketSentListener listener) {
+        listenerList.add(PacketSentListener.class, listener);
+    }
+
+    private void removePacketSentListener(PacketSentListener listener) {
+        listenerList.remove(PacketSentListener.class, listener);
+    }
+
+    private void firePacketSentEvent(PacketSentEvent event) {
+        Object[] listeners = listenerList.getListenerList();
+        for (int i = 0; i < listeners.length; i += 2) {
+            if (listeners[i] == PacketSentListener.class) {
+                ((PacketSentListener) listeners[i + 1]).PacketSent(event);
             }
         }
     }

@@ -1,11 +1,13 @@
 package Socketify.Udp;
 
-import Socketify.Events.CallbackPacketReceived.CallbackPacketReceivedEvent;
-import Socketify.Events.CallbackPacketReceived.CallbackPacketReceivedListener;
+import Socketify.Events.CallbackPacketReceivedEvent.CallbackPacketReceivedEvent;
+import Socketify.Events.CallbackPacketReceivedEvent.CallbackPacketReceivedListener;
 import Socketify.Events.ClientConnectedEvent.ClientConnectedEvent;
 import Socketify.Events.ClientConnectedEvent.ClientConnectedListener;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedListener;
+import Socketify.Events.PacketSentEvent.PacketSentEvent;
+import Socketify.Events.PacketSentEvent.PacketSentListener;
 import Socketify.Packets.Callback;
 import Socketify.Packets.CallbackAction;
 import Socketify.Packets.Packet;
@@ -21,7 +23,7 @@ import java.util.ArrayList;
 /**
  * Created by nathan on 15/08/15.
  */
-public class UdpClient extends Thread{
+public class UdpClient extends Thread {
 
     private InetAddress host;
     private int port;
@@ -33,7 +35,7 @@ public class UdpClient extends Thread{
 
     private byte[] buffer = new byte[SocketifyServer.BUFFER_SIZE];
 
-    public UdpClient(String host, int port) throws IOException, ClassNotFoundException{
+    public UdpClient(String host, int port) throws IOException, ClassNotFoundException {
         this.host = InetAddress.getByName(host);
         this.port = port;
         socket = new DatagramSocket();
@@ -42,14 +44,12 @@ public class UdpClient extends Thread{
     }
 
 
-    public void connect() throws IOException{
+    public void connect() throws IOException {
         //Request client's id to server
 
         start();
 
-        Packet cbPacket = new Packet(null, -2, 1);
-
-        sendCallBack(cbPacket, new CallbackAction(this) {
+        sendCallBack(new Packet(null, -2, 1), new CallbackAction(this) {
             @Override
             public void run() {
                 getSource().setId((int) getServerResponse().getContent());
@@ -59,7 +59,7 @@ public class UdpClient extends Thread{
 
     }
 
-    public void disconnect() throws IOException{
+    public void disconnect() throws IOException {
         Packet disconnectCallbackPacket = new Packet(null, id, 2);
 
         sendCallBack(disconnectCallbackPacket, new CallbackAction(this) {
@@ -83,12 +83,12 @@ public class UdpClient extends Thread{
                 socket.receive(incomingPacket);
                 Packet receivedPacket = Packet.toPacket(incomingPacket.getData());
 
-                if(receivedPacket.getType() != 0){ //Then it's a callback packet
+                if (receivedPacket.getType() != 0) { //Then it's a callback packet
 
                     int callbackToRemoveIndex = -1;
 
-                    for(Callback cb : callbacks){
-                        if(cb.getType() == receivedPacket.getType()){
+                    for (Callback cb : callbacks) {
+                        if (cb.getType() == receivedPacket.getType()) {
                             cb.setServerResponse(receivedPacket);
                             cb.run();
                             callbackToRemoveIndex = callbacks.indexOf(cb);
@@ -97,9 +97,9 @@ public class UdpClient extends Thread{
                         }
                     }
 
-                    if(callbackToRemoveIndex != -1) callbacks.remove(callbackToRemoveIndex);
+                    if (callbackToRemoveIndex != -1) callbacks.remove(callbackToRemoveIndex);
 
-                }else firePacketReceivedEvent(new PacketReceivedEvent(this, receivedPacket));
+                } else firePacketReceivedEvent(new PacketReceivedEvent(this, receivedPacket));
 
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -107,9 +107,10 @@ public class UdpClient extends Thread{
         }
     }
 
-    public synchronized void sendCallBack(Packet cbPacket, CallbackAction action, int waitTimeMs) throws IOException{
+    public synchronized void sendCallBack(Packet cbPacket, CallbackAction action, int waitTimeMs) throws IOException {
 
-        if(cbPacket.getType() < 1) throw new IllegalArgumentException("Callback packet's type must be 0 superior than 0.");
+        if (cbPacket.getType() < 1)
+            throw new IllegalArgumentException("Callback packet's type must be 0 superior than 0.");
 
         Callback cb = new Callback(this, cbPacket, action);
         callbacks.add(cb);
@@ -119,7 +120,7 @@ public class UdpClient extends Thread{
         new Thread(new Runnable() {
             @Override
             public void run() {
-                while(!interrupted()) {
+                while (!interrupted()) {
                     try {
                         Thread.sleep(waitTimeMs);
                     } catch (InterruptedException ie) {
@@ -140,8 +141,8 @@ public class UdpClient extends Thread{
 
     }
 
-    public void send(Object obj) throws IOException{
-        if(socket != null){
+    public void send(Object obj) throws IOException {
+        if (socket != null) {
             byte[] data = Packet.toByteArray(new Packet(obj, id));
             socket.send(new DatagramPacket(data, data.length, host, port));
         }
@@ -153,7 +154,7 @@ public class UdpClient extends Thread{
         this.id = id;
     }
 
-    public boolean isConnected(){
+    public boolean isConnected() {
         return id != -1;
     }
 
@@ -215,6 +216,25 @@ public class UdpClient extends Thread{
         for (int i = 0; i < listeners.length; i += 2) {
             if (listeners[i] == ClientConnectedListener.class) {
                 ((ClientConnectedListener) listeners[i + 1]).ClientConnected(event);
+            }
+        }
+    }
+
+    //PacketSent Event
+
+    public void addPacketSentListener(PacketSentListener listener) {
+        listenerList.add(PacketSentListener.class, listener);
+    }
+
+    private void removePacketSentListener(PacketSentListener listener) {
+        listenerList.remove(PacketSentListener.class, listener);
+    }
+
+    private void firePacketSentEvent(PacketSentEvent event) {
+        Object[] listeners = listenerList.getListenerList();
+        for (int i = 0; i < listeners.length; i += 2) {
+            if (listeners[i] == PacketSentListener.class) {
+                ((PacketSentListener) listeners[i + 1]).PacketSent(event);
             }
         }
     }

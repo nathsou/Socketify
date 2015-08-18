@@ -2,6 +2,8 @@ package Socketify.Tcp;
 
 import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedListener;
+import Socketify.Events.PacketSentEvent.PacketSentEvent;
+import Socketify.Events.PacketSentEvent.PacketSentListener;
 import Socketify.Packets.Packet;
 
 import javax.swing.event.EventListenerList;
@@ -66,7 +68,7 @@ public class TcpClient {
         }
     }
 
-    public void disconnect() throws IOException{
+    public void disconnect() throws IOException {
         if (connected) {
             out.close();
             in.close();
@@ -75,12 +77,15 @@ public class TcpClient {
         }
     }
 
-    public void send(Object obj) throws IOException{
+    public void send(Object obj) throws IOException {
 
         if (connected) {
             //connection.setSoTimeout(2000);
-            out.writeObject(new Packet(obj, id));
+            Packet packet = new Packet(obj, id);
+            out.writeObject(packet);
             out.flush();
+
+            firePacketSentEvent(new PacketSentEvent(this, packet));
         } else {
             throw new Error("TClient must be connected to a server in order to send a packet");
         }
@@ -115,6 +120,25 @@ public class TcpClient {
         for (int i = 0; i < listeners.length; i += 2) {
             if (listeners[i] == PacketReceivedListener.class) {
                 ((PacketReceivedListener) listeners[i + 1]).PacketReceived(event);
+            }
+        }
+    }
+
+    //PacketSent Event
+
+    public void addPacketSentListener(PacketSentListener listener) {
+        listenerList.add(PacketSentListener.class, listener);
+    }
+
+    private void removePacketSentListener(PacketSentListener listener) {
+        listenerList.remove(PacketSentListener.class, listener);
+    }
+
+    private void firePacketSentEvent(PacketSentEvent event) {
+        Object[] listeners = listenerList.getListenerList();
+        for (int i = 0; i < listeners.length; i += 2) {
+            if (listeners[i] == PacketSentListener.class) {
+                ((PacketSentListener) listeners[i + 1]).PacketSent(event);
             }
         }
     }

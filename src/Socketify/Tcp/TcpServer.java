@@ -6,6 +6,8 @@ import Socketify.Events.ClientConnectedEvent.ClientConnectedEvent;
 import Socketify.Events.ClientDisconnectedEvent.ClientDisconnectedEvent;
 import Socketify.Events.ClientDisconnectedEvent.ClientDisconnectedListener;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
+import Socketify.Events.PacketSentEvent.PacketSentEvent;
+import Socketify.Events.PacketSentEvent.PacketSentListener;
 import Socketify.Packets.Packet;
 import Socketify.Socketify.ProtocolType;
 import Socketify.Socketify.SocketifyServer;
@@ -55,7 +57,7 @@ public class TcpServer extends Thread {
             while (true) {
                 connection = serverSocket.accept();
                 TClient client = new TClient(connection, id + 1);
-                if(!clientExists(client)){
+                if (!clientExists(client)) {
                     id++;
                     addClient(client);
                 }
@@ -70,7 +72,7 @@ public class TcpServer extends Thread {
                             try {
                                 Packet packet = (Packet) client.readObject();
 
-                                switch (packet.getType()){
+                                switch (packet.getType()) {
                                     case 0:
                                         firePacketReceivedEvent(new PacketReceivedEvent(this, packet));
                                         break;
@@ -106,22 +108,38 @@ public class TcpServer extends Thread {
     public void sendTo(Object obj, int clientId) throws IOException {
         for (TClient c : SocketifyServer.TClients) {
             if (c.getId() == clientId) {
-                c.writeObject(new Packet(obj, -1));
+                Packet packet = new Packet(obj, -1);
+                c.writeObject(packet);
+                firePacketSentEvent(new PacketSentEvent(this, packet));
                 break;
             }
         }
     }
 
     public void sendToAll(Object obj) throws IOException {
-        for (TClient c : SocketifyServer.TClients) c.writeObject(new Packet(obj, -1));
+        for (TClient c : SocketifyServer.TClients) {
+            Packet packet = new Packet(obj, -1);
+            c.writeObject(packet);
+            firePacketSentEvent(new PacketSentEvent(this, packet));
+        }
     }
 
     public void sendToAllExcept(Object obj, int exceptId) throws IOException {
-        for (TClient c : SocketifyServer.TClients) if (c.getId() != exceptId) c.writeObject(new Packet(obj, -1));
+        for (TClient c : SocketifyServer.TClients)
+            if (c.getId() != exceptId) {
+                Packet packet = new Packet(obj, -1);
+                c.writeObject(packet);
+                firePacketSentEvent(new PacketSentEvent(this, packet));
+            }
     }
 
     public void sendToAllExcept(Object obj, List<Integer> exceptIds) throws IOException {
-        for (TClient c : SocketifyServer.TClients) if (!exceptIds.contains(c.getId())) c.writeObject(new Packet(obj, -1));
+        for (TClient c : SocketifyServer.TClients)
+            if (!exceptIds.contains(c.getId())) {
+                Packet packet = new Packet(obj, -1);
+                c.writeObject(packet);
+                firePacketSentEvent(new PacketSentEvent(this, packet));
+            }
     }
 
     public void sendToAllExcept(Object obj, int[] exceptIds) throws IOException {
@@ -132,7 +150,12 @@ public class TcpServer extends Thread {
                 if (id == c.getId()) {
                     contains = true;
                 }
-            if (!contains) c.writeObject(new Packet(obj, -1));
+
+            if (!contains) {
+                Packet packet = new Packet(obj, -1);
+                c.writeObject(packet);
+                firePacketSentEvent(new PacketSentEvent(this, packet));
+            }
         }
     }
 
@@ -150,14 +173,14 @@ public class TcpServer extends Thread {
         }
     }
 
-    private void addClient(TClient client){
-        if(!clientExists(client))
+    private void addClient(TClient client) {
+        if (!clientExists(client))
             SocketifyServer.TClients.add(client);
     }
 
 
-    private boolean clientExists(TClient client){
-        for(TClient c : SocketifyServer.TClients) if (c.equals(client)) return true;
+    private boolean clientExists(TClient client) {
+        for (TClient c : SocketifyServer.TClients) if (c.equals(client)) return true;
         return false;
     }
 
@@ -230,6 +253,25 @@ public class TcpServer extends Thread {
         for (int i = 0; i < listeners.length; i += 2) {
             if (listeners[i] == PacketReceivedListener.class) {
                 ((PacketReceivedListener) listeners[i + 1]).PacketReceived(event);
+            }
+        }
+    }
+
+    //PacketSent Event
+
+    public void addPacketSentListener(PacketSentListener listener) {
+        listenerList.add(PacketSentListener.class, listener);
+    }
+
+    private void removePacketSentListener(PacketSentListener listener) {
+        listenerList.remove(PacketSentListener.class, listener);
+    }
+
+    private void firePacketSentEvent(PacketSentEvent event) {
+        Object[] listeners = listenerList.getListenerList();
+        for (int i = 0; i < listeners.length; i += 2) {
+            if (listeners[i] == PacketSentListener.class) {
+                ((PacketSentListener) listeners[i + 1]).PacketSent(event);
             }
         }
     }

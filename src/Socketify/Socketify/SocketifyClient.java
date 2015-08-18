@@ -100,6 +100,32 @@ public class SocketifyClient {
 
     }
 
+    //Getters & Setters
+
+    public int getTcpPort() {
+        return tcpPort;
+    }
+
+    public int getUdpPort() {
+        return udpPort;
+    }
+
+    public TcpClient getTcpClient() {
+        return tcpClient;
+    }
+
+    public UdpClient getUdpClient() {
+        return udpClient;
+    }
+
+    public int getTcpId(){
+        return tcpClient.getId();
+    }
+
+    public int getUdpId(){
+        return udpClient.getIndex();
+    }
+
     //Events
 
     //PacketReceived Event

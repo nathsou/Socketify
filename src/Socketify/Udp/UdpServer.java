@@ -8,7 +8,6 @@ import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedListener;
 import Socketify.Packets.Packet;
 import Socketify.Socketify.SocketifyServer;
-import Socketify.Tcp.Client;
 
 import javax.swing.event.EventListenerList;
 import java.io.IOException;
@@ -18,7 +17,7 @@ import java.util.Collection;
 /**
  * Created by nathan on 15/08/15.
  */
-public class UdpServer extends Thread{
+public class UdpServer extends Thread {
 
     private int port;
     private DatagramSocket serverSocket;
@@ -26,12 +25,12 @@ public class UdpServer extends Thread{
     private EventListenerList listenerList = new EventListenerList();
     private int id = 0;
 
-    public UdpServer(int port) throws UnknownHostException{
+    public UdpServer(int port) throws UnknownHostException {
         this.port = port;
         listenerList = new EventListenerList();
     }
 
-    public void listen(){
+    public void listen() {
         start();
     }
 
@@ -41,14 +40,14 @@ public class UdpServer extends Thread{
 
         DatagramPacket incomingPacket;
 
-        while(!interrupted()){
+        while (!interrupted()) {
 
             try {
-                if(serverSocket == null) serverSocket = new DatagramSocket(port);
+                if (serverSocket == null) serverSocket = new DatagramSocket(port);
                 incomingPacket = new DatagramPacket(buffer, buffer.length);
                 try {
                     serverSocket.receive(incomingPacket);
-                }catch (SocketException se){
+                } catch (SocketException se) {
                     break;
                 }
 
@@ -56,29 +55,26 @@ public class UdpServer extends Thread{
 
                 Packet response;
 
-                switch (receivedPacket.getType()){
+                switch (receivedPacket.getType()) {
                     case 0: //Normal packet
                         firePacketReceivedEvent(new PacketReceivedEvent(this, receivedPacket));
                         break;
 
                     case 1: //New client callback
                         id++;
-                        response = new Packet(id, -1); // -1 -> Server
-                        response.setType(1);
+                        response = new Packet(id, -1, 1); // -1 -> Server
                         sendTo(response, incomingPacket.getAddress(), incomingPacket.getPort());
 
-                        SocketifyServer.clients.add(
-                                new Client(incomingPacket.getAddress(), receivedPacket.getSenderId(), incomingPacket.getPort())
-                        );
+                        addClient(incomingPacket.getAddress(), incomingPacket.getPort(), receivedPacket.getSenderId());
 
                         fireClientConnectedEvent(new ClientConnectedEvent(this, id));
                         break;
 
-                    case 2: //Client disconnected callback
+                    case 2: //UClient disconnected callback
 
-                        for(Client c : SocketifyServer.clients){
-                            if(c.getId() == receivedPacket.getSenderId()){
-                                SocketifyServer.clients.remove(c);
+                        for (UClient c : SocketifyServer.UClients) {
+                            if (c.getId() == receivedPacket.getSenderId()) {
+                                SocketifyServer.UClients.remove(c);
                             }
                         }
 
@@ -87,91 +83,103 @@ public class UdpServer extends Thread{
                         break;
 
                     case 3: //Acknowledgement packet
-                        response = new Packet(null, -1);
-                        response.setType(3);
+                        response = new Packet(null, -1, 3);
                         sendTo(response, incomingPacket.getAddress(), incomingPacket.getPort());
                         firePacketReceivedEvent(new PacketReceivedEvent(this, receivedPacket));
                         break;
 
-                     default:
-                         break;
-                    }
+                    default:
+                        sendTo(receivedPacket, incomingPacket.getAddress(), incomingPacket.getPort());
+                        break;
+                }
 
-            }catch (IOException | ClassNotFoundException e){
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
 
         }
-
     }
 
-    public void close(){
+    public void close() {
         interrupt();
-        serverSocket.close();
+        if(serverSocket.isConnected()) serverSocket.close();
     }
 
-    public synchronized void sendTo(Packet packet, InetAddress address, int port) throws IOException{
+    private void addClient(InetAddress address, int port, int senderId) throws IOException{
 
-        if(serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
+        for(UClient c : SocketifyServer.UClients) if(c.getAddress().equals(address) && c.getPort() == port) return;
+        SocketifyServer.UClients.add(new UClient(address, senderId, port));
+
+    }
+
+    private void addClient(UClient client) throws IOException{
+        for(UClient c : SocketifyServer.UClients) if(c.equals(client)) return;
+        SocketifyServer.UClients.add(client);
+    }
+
+    public void sendTo(Packet packet, InetAddress address, int port) throws IOException {
+
+        if (serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
 
         byte[] data = Packet.toByteArray(packet);
         serverSocket.send(new DatagramPacket(data, data.length, address, port));
     }
 
-    public synchronized void sendTo(Object obj, int clientId) throws IOException{
-        Client client = getClientById(clientId);
+    public void sendTo(Object obj, int clientId) throws IOException {
+        UClient client = geUClientById(clientId);
 
-        if(serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
+        if (serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
 
-        if(client != null) {
+        if (client != null) {
             byte[] data = Packet.toByteArray(new Packet(obj, -1));
             serverSocket.send(new DatagramPacket(data, data.length, client.getAddress(), client.getPort()));
-        }else{
-            throw new IllegalArgumentException("Client of id: " + clientId + " doesn't exist.");
+        } else {
+            throw new IllegalArgumentException("UClient of id: " + clientId + " doesn't exist.");
         }
     }
 
-    public synchronized void sendToAll(Object obj) throws IOException{
+    public void sendToAll(Object obj) throws IOException {
 
-        if(serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
+        if (serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
 
         byte[] data = Packet.toByteArray(new Packet(obj, -1));
-        for(Client c : SocketifyServer.clients) serverSocket.send(new DatagramPacket(data, data.length, c.getAddress(), c.getPort()));
+        for (UClient c : SocketifyServer.UClients)
+            serverSocket.send(new DatagramPacket(data, data.length, c.getAddress(), c.getPort()));
     }
 
-    public synchronized void sendToAllExcept(Object obj, int exceptId) throws IOException{
+    public void sendToAllExcept(Object obj, int exceptId) throws IOException {
 
-        if(serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
+        if (serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
 
         byte[] data = Packet.toByteArray(new Packet(obj, -1));
-        for(Client c : SocketifyServer.clients)
-            if(c.getId() != exceptId)
+        for (UClient c : SocketifyServer.UClients)
+            if (c.getId() != exceptId)
                 serverSocket.send(new DatagramPacket(data, data.length, c.getAddress(), c.getPort()));
     }
 
-    public synchronized void sendToAllExcept(Object obj, Collection<Integer> exceptIdList) throws IOException{
+    public void sendToAllExcept(Object obj, Collection<Integer> exceptIdList) throws IOException {
 
-        if(serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
+        if (serverSocket == null) throw new SocketException("Server must be listening in order to send data.");
 
         byte[] data = Packet.toByteArray(new Packet(obj, -1));
-        for(Client c : SocketifyServer.clients)
-            if(!exceptIdList.contains(c.getId()))
+        for (UClient c : SocketifyServer.UClients)
+            if (!exceptIdList.contains(c.getId()))
                 serverSocket.send(new DatagramPacket(data, data.length, c.getAddress(), c.getPort()));
     }
 
-    public synchronized void sendToAllExcept(Object obj, int[] exceptIdArray) throws IOException{
+    public void sendToAllExcept(Object obj, int[] exceptIdArray) throws IOException {
 
         byte[] data = Packet.toByteArray(new Packet(obj, -1));
 
-        for(Client c : SocketifyServer.clients){
+        for (UClient c : SocketifyServer.UClients) {
             boolean contains = false;
-            for(int id : exceptIdArray) if(id == c.getId()) contains = true;
-            if(!contains) serverSocket.send(new DatagramPacket(data, data.length, c.getAddress(), c.getPort()));
+            for (int id : exceptIdArray) if (id == c.getId()) contains = true;
+            if (!contains) serverSocket.send(new DatagramPacket(data, data.length, c.getAddress(), c.getPort()));
         }
     }
 
-    private Client getClientById(int id){
-        for(Client c : SocketifyServer.clients) if(c.getId() == id) return c;
+    private UClient geUClientById(int id) {
+        for (UClient c : SocketifyServer.UClients) if (c.getId() == id) return c;
         return null;
     }
 
@@ -234,6 +242,5 @@ public class UdpServer extends Thread{
             }
         }
     }
-
 
 }

@@ -1,6 +1,7 @@
 package Socketify.Events.CallbackPacketReceived;
 
 import Socketify.Packets.Packet;
+import Socketify.Socketify.ProtocolType;
 
 import java.util.EventObject;
 
@@ -10,6 +11,7 @@ import java.util.EventObject;
 public class CallbackPacketReceivedEvent extends EventObject{
 
     private Packet packet;
+    private ProtocolType protocol = ProtocolType.UNKNOWN;
 
     public CallbackPacketReceivedEvent(Object source, Packet packet) {
         super(source);
@@ -20,5 +22,13 @@ public class CallbackPacketReceivedEvent extends EventObject{
 
     public Packet getPacket() {
         return packet;
+    }
+
+    public ProtocolType getProtocol() {
+        return protocol;
+    }
+
+    public void setProtocol(ProtocolType protocol) {
+        this.protocol = protocol;
     }
 }

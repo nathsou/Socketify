@@ -1,5 +1,7 @@
 package Socketify.Events.ClientDisconnectedEvent;
 
+import Socketify.Socketify.ProtocolType;
+
 import java.util.EventObject;
 
 /**
@@ -8,6 +10,7 @@ import java.util.EventObject;
 public class ClientDisconnectedEvent extends EventObject {
 
     private int id;
+    private ProtocolType protocol = ProtocolType.UNKNOWN;
 
     public ClientDisconnectedEvent(Object source, int id) {
         super(source);
@@ -16,5 +19,13 @@ public class ClientDisconnectedEvent extends EventObject {
 
     public int getId() {
         return id;
+    }
+
+    public ProtocolType getProtocol() {
+        return protocol;
+    }
+
+    public void setProtocol(ProtocolType protocol) {
+        this.protocol = protocol;
     }
 }

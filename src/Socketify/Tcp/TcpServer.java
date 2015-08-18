@@ -7,6 +7,7 @@ import Socketify.Events.ClientDisconnectedEvent.ClientDisconnectedEvent;
 import Socketify.Events.ClientDisconnectedEvent.ClientDisconnectedListener;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
 import Socketify.Packets.Packet;
+import Socketify.Socketify.ProtocolType;
 import Socketify.Socketify.SocketifyServer;
 
 import javax.swing.event.EventListenerList;
@@ -21,7 +22,7 @@ import java.util.List;
 /**
  * Created by nathan on 07/08/15.
  */
-public class TcpServer extends Thread{
+public class TcpServer extends Thread {
 
     private int port;
     private ServerSocket serverSocket;
@@ -29,19 +30,19 @@ public class TcpServer extends Thread{
     private Socket connection;
     private EventListenerList listenerList = new EventListenerList();
 
-    public TcpServer(int port){
+    public TcpServer(int port) {
 
         this.port = port;
         try {
             serverSocket = new ServerSocket(port);
             //serverSocket.setSoTimeout(2000);
-        }catch (IOException ioe){
+        } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-        SocketifyServer.clients = new ArrayList<>();
+        SocketifyServer.TClients = new ArrayList<>();
     }
 
-    public void listen(){
+    public void listen() {
         start();
     }
 
@@ -51,11 +52,13 @@ public class TcpServer extends Thread{
 
         try {
 
-            while(true){
+            while (true) {
                 connection = serverSocket.accept();
-                id++;
-                Client client = new Client(connection, id);
-                SocketifyServer.clients.add(client);
+                TClient client = new TClient(connection, id + 1);
+                if(!clientExists(client)){
+                    id++;
+                    addClient(client);
+                }
                 client.writeObject(id);
                 fireClientConnectedEvent(new ClientConnectedEvent(this, id));
 
@@ -63,19 +66,27 @@ public class TcpServer extends Thread{
                     @Override
                     public void run() {
 
-                        while(true){
-                            try{
+                        while (true) {
+                            try {
                                 Packet packet = (Packet) client.readObject();
-                                firePacketReceivedEvent(new PacketReceivedEvent(this, packet));
-                            }catch (ClassNotFoundException cnf){
+
+                                switch (packet.getType()){
+                                    case 0:
+                                        firePacketReceivedEvent(new PacketReceivedEvent(this, packet));
+                                        break;
+                                    default:
+                                        break;
+                                }
+
+                            } catch (ClassNotFoundException cnf) {
                                 cnf.printStackTrace();
-                            }catch (IOException ioe){
+                            } catch (IOException ioe) {
                                 try {
                                     client.close();
-                                }catch (IOException ioe2){
+                                } catch (IOException ioe2) {
                                     ioe2.printStackTrace();
                                 }
-                                SocketifyServer.clients.remove(client);
+                                SocketifyServer.TClients.remove(client);
                                 fireClientDisconnectedEvent(new ClientDisconnectedEvent(this, client.getId()));
                                 break;
                             }
@@ -85,61 +96,74 @@ public class TcpServer extends Thread{
 
             }
 
-        }catch (SocketException se){
+        } catch (SocketException se) {
 
-        }catch (IOException ioe){
+        } catch (IOException ioe) {
             ioe.printStackTrace();
         }
     }
 
-    public void sendTo(Object obj, int clientId) throws IOException{
-        for(Client c : SocketifyServer.clients){
-            if(c.getId() == clientId){
-                    c.writeObject(new Packet(obj, -1));
+    public void sendTo(Object obj, int clientId) throws IOException {
+        for (TClient c : SocketifyServer.TClients) {
+            if (c.getId() == clientId) {
+                c.writeObject(new Packet(obj, -1));
                 break;
             }
         }
     }
 
-    public void sendToAll(Object obj) throws IOException{
-        for(Client c : SocketifyServer.clients) c.writeObject(new Packet(obj, -1));
+    public void sendToAll(Object obj) throws IOException {
+        for (TClient c : SocketifyServer.TClients) c.writeObject(new Packet(obj, -1));
     }
 
-    public void sendToAllExcept(Object obj, int exceptId) throws IOException{
-        for(Client c : SocketifyServer.clients) if (c.getId() != exceptId) c.writeObject(new Packet(obj, -1));
+    public void sendToAllExcept(Object obj, int exceptId) throws IOException {
+        for (TClient c : SocketifyServer.TClients) if (c.getId() != exceptId) c.writeObject(new Packet(obj, -1));
     }
 
-    public void sendToAllExcept(Object obj, List<Integer> exceptIds) throws IOException{
-        for(Client c : SocketifyServer.clients) if (!exceptIds.contains(c.getId())) c.writeObject(new Packet(obj, -1));
+    public void sendToAllExcept(Object obj, List<Integer> exceptIds) throws IOException {
+        for (TClient c : SocketifyServer.TClients) if (!exceptIds.contains(c.getId())) c.writeObject(new Packet(obj, -1));
     }
 
-    public void sendToAllExcept(Object obj, int[] exceptIds) throws IOException{
+    public void sendToAllExcept(Object obj, int[] exceptIds) throws IOException {
 
-        for(Client c : SocketifyServer.clients){
+        for (TClient c : SocketifyServer.TClients) {
             boolean contains = false;
-            for(int id : exceptIds) if(id == c.getId()){contains = true;}
+            for (int id : exceptIds)
+                if (id == c.getId()) {
+                    contains = true;
+                }
             if (!contains) c.writeObject(new Packet(obj, -1));
         }
     }
 
 
-    public void close(){
+    public void close() {
         interrupt();
         try {
-            if(!serverSocket.isClosed()) {
+            if (!serverSocket.isClosed()) {
                 serverSocket.close();
                 id = 0;
             }
-            //for(Client c : SocketifyServer.clients){if(!c.getSocket().isClosed()) c.getSocket().close();}
 
-        }catch (IOException ioe){
+        } catch (IOException ioe) {
             ioe.printStackTrace();
         }
     }
 
+    private void addClient(TClient client){
+        if(!clientExists(client))
+            SocketifyServer.TClients.add(client);
+    }
+
+
+    private boolean clientExists(TClient client){
+        for(TClient c : SocketifyServer.TClients) if (c.equals(client)) return true;
+        return false;
+    }
+
     //Getters && Setters
 
-    public InetAddress getInetAddress(){
+    public InetAddress getInetAddress() {
         return serverSocket.getInetAddress();
     }
 
@@ -147,8 +171,8 @@ public class TcpServer extends Thread{
         return port;
     }
 
-    public int clientCount(){
-        return SocketifyServer.clients.size();
+    public int clientCount() {
+        return SocketifyServer.TClients.size();
     }
 
     //Events

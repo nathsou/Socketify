@@ -4,8 +4,7 @@ package Socketify.Packets;
 import Socketify.Socketify.SocketifyServer;
 
 import java.io.*;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.InflaterInputStream;
+import java.util.zip.*;
 
 /**
  * Created by nathan on 07/08/15.
@@ -19,6 +18,18 @@ public class Packet implements Serializable{
     public Packet(Object content, int senderId) {
         this.content = content;
         this.senderId = senderId;
+    }
+
+    public Packet(Object content, int senderId, short type){
+        this.content = content;
+        this.senderId = senderId;
+        this.type = type;
+    }
+
+    public Packet(Object content, int senderId, int type){
+        this.content = content;
+        this.senderId = senderId;
+        this.type = (short) type;
     }
 
     //Getters & Setters
@@ -62,25 +73,34 @@ public class Packet implements Serializable{
         return (Packet) o.readObject();
     }
 
-    public byte[] compress() throws IOException{
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    public byte[] compress() throws IOException{ //Compresses the packet
 
-        OutputStream out = new DeflaterOutputStream(baos);
-        out.write(toByteArray(this));
-        out.close();
-
-        return baos.toByteArray();
+        Deflater deflater = new Deflater();
+        byte[] data = Packet.toByteArray(this);
+        deflater.setInput(data);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length);
+        deflater.finish();
+        byte[] buffer = new byte[SocketifyServer.BUFFER_SIZE];
+        while (!deflater.finished()) {
+            int count = deflater.deflate(buffer);
+            outputStream.write(buffer, 0, count);
+        }
+        outputStream.close();
+        return outputStream.toByteArray();
     }
 
-    public static Packet decompress(byte[] data) throws IOException, ClassNotFoundException{
-        InputStream in = new InflaterInputStream(new ByteArrayInputStream(data));
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    public static Packet decompress(byte[] data) throws IOException, DataFormatException, ClassNotFoundException {
+        Inflater inflater = new Inflater();
+        inflater.setInput(data);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length);
         byte[] buffer = new byte[SocketifyServer.BUFFER_SIZE];
-        int len;
+        while (!inflater.finished()) {
+            int count = inflater.inflate(buffer);
+            outputStream.write(buffer, 0, count);
+        }
+        outputStream.close();
 
-        while ((len = in.read(buffer)) > 0) baos.write(buffer, 0, len);
-
-        return Packet.toPacket(baos.toByteArray());
+        return Packet.toPacket(outputStream.toByteArray());
     }
 
     //toString

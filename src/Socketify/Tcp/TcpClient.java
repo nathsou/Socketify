@@ -25,21 +25,14 @@ public class TcpClient {
     private boolean connected = false;
     private EventListenerList listenerList;
 
-    public TcpClient(String host, int port) throws UnknownHostException{
-
+    public TcpClient(String host, int port) throws UnknownHostException, IOException {
         this.port = port;
-        try{
-            this.host = InetAddress.getByName(host);
-        }catch (IOException ioe){
-            ioe.printStackTrace();
-        }
-
+        this.host = InetAddress.getByName(host);
         listenerList = new EventListenerList();
-
     }
 
     public void connect() {
-        if(!connected) {
+        if (!connected) {
             try {
 
                 connection = new Socket(host, port);
@@ -52,53 +45,44 @@ public class TcpClient {
                 new Thread(new Runnable() { //Receive packets from server
                     @Override
                     public void run() {
-                        while(connected){
+                        while (connected) {
                             try {
                                 Packet packet = (Packet) in.readObject();
                                 firePacketReceivedEvent(new PacketReceivedEvent(this, packet));
-                            }catch (ClassNotFoundException cnf) {
+                            } catch (ClassNotFoundException cnf) {
                                 cnf.printStackTrace();
-                            }catch (SocketException se){
+                            } catch (SocketException se) {
                                 //se.printStackTrace();
-                                disconnect();
-                            }catch (IOException ioe){
+                            } catch (IOException ioe) {
                                 ioe.printStackTrace();
                             }
                         }
                     }
                 }).start();
 
-            }catch (IOException | ClassNotFoundException e){
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public void disconnect(){
-        if(connected) {
-            try {
-                out.close();
-                in.close();
-                connected = false;
-                connection.close();
-            }catch (IOException ioe){
-                ioe.printStackTrace();
-            }
+    public void disconnect() throws IOException{
+        if (connected) {
+            out.close();
+            in.close();
+            connected = false;
+            connection.close();
         }
     }
 
-    public void send(Object obj){
+    public void send(Object obj) throws IOException{
 
-        if(connected){
-            try{
-                //connection.setSoTimeout(2000);
-                out.writeObject(new Packet(obj, id));
-                out.flush();
-            }catch (IOException ioe){
-                ioe.printStackTrace();
-            }
-        }else{
-            throw new Error("Client must be connected to a server in order to send a packet");
+        if (connected) {
+            //connection.setSoTimeout(2000);
+            out.writeObject(new Packet(obj, id));
+            out.flush();
+        } else {
+            throw new Error("TClient must be connected to a server in order to send a packet");
         }
 
     }

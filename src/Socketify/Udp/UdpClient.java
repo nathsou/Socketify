@@ -2,6 +2,8 @@ package Socketify.Udp;
 
 import Socketify.Events.CallbackPacketReceived.CallbackPacketReceivedEvent;
 import Socketify.Events.CallbackPacketReceived.CallbackPacketReceivedListener;
+import Socketify.Events.ClientConnectedEvent.ClientConnectedEvent;
+import Socketify.Events.ClientConnectedEvent.ClientConnectedListener;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedEvent;
 import Socketify.Events.PacketReceivedEvent.PacketReceivedListener;
 import Socketify.Packets.Callback;
@@ -45,21 +47,20 @@ public class UdpClient extends Thread{
 
         start();
 
-        Packet cbPacket = new Packet(null, -2);
-        cbPacket.setType(1);
+        Packet cbPacket = new Packet(null, -2, 1);
 
         sendCallBack(cbPacket, new CallbackAction(this) {
             @Override
             public void run() {
                 getSource().setId((int) getServerResponse().getContent());
+                fireClientConnectedEvent(new ClientConnectedEvent(this, id));
             }
         }, callbackWaitMs);
 
     }
 
     public void disconnect() throws IOException{
-        Packet disconnectCallbackPacket = new Packet(null, id);
-        disconnectCallbackPacket.setType(2);
+        Packet disconnectCallbackPacket = new Packet(null, id, 2);
 
         sendCallBack(disconnectCallbackPacket, new CallbackAction(this) {
             @Override
@@ -139,7 +140,7 @@ public class UdpClient extends Thread{
 
     }
 
-    public synchronized void send(Object obj) throws IOException{
+    public void send(Object obj) throws IOException{
         if(socket != null){
             byte[] data = Packet.toByteArray(new Packet(obj, id));
             socket.send(new DatagramPacket(data, data.length, host, port));
@@ -195,6 +196,25 @@ public class UdpClient extends Thread{
         for (int i = 0; i < listeners.length; i += 2) {
             if (listeners[i] == CallbackPacketReceivedListener.class) {
                 ((CallbackPacketReceivedListener) listeners[i + 1]).CallbackPacketReceived(event);
+            }
+        }
+    }
+
+    //ClientConnected Event
+
+    public void addClientConnectedListener(ClientConnectedListener listener) {
+        listenerList.add(ClientConnectedListener.class, listener);
+    }
+
+    private void removeClientConnectedListener(ClientConnectedListener listener) {
+        listenerList.remove(ClientConnectedListener.class, listener);
+    }
+
+    private void fireClientConnectedEvent(ClientConnectedEvent event) {
+        Object[] listeners = listenerList.getListenerList();
+        for (int i = 0; i < listeners.length; i += 2) {
+            if (listeners[i] == ClientConnectedListener.class) {
+                ((ClientConnectedListener) listeners[i + 1]).ClientConnected(event);
             }
         }
     }

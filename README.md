@@ -32,17 +32,14 @@ server.close();
 ##Event handling
 
 Server classes fire the following events:
-
 * PacketReceivedEvent
 * PacketSentEvent
 
 Client classes fire the following events:
-
 * ClientConnectedEvent
 * ClientDisconnectedEvent
 * PacketReceivedEvent
 * PacketSentEvent
-* 
 
 ```java
 
@@ -50,7 +47,7 @@ server.addPacketReceivedListener(new PacketReceivedListener() {
    @Override
    public void PacketReceived(PacketReceivedEvent e) {
       System.out.println("Server received (" + e.getProtocol() + "): " + e.getPacket() + " from " + e.getSenderId())
-    }
+   }
 });
 
 //Using lambda expressions:

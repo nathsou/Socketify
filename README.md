@@ -46,14 +46,12 @@ Client classes fire the following events:
 server.addPacketReceivedListener(new PacketReceivedListener() {
    @Override
    public void PacketReceived(PacketReceivedEvent e) {
-      System.out.println("Server received (" + e.getProtocol() + "): " + e.getPacket() + " from " + e.getSenderId())
+      System.out.println("Server received (" + e.getProtocol() + "): " + e.getPacket() + " from " + e.getSenderId());
    }
 });
 
 //Using lambda expressions:
 
-server.addPacketReceivedListener(e -> 
-  System.out.println("Server received (" + e.getProtocol() + "): " + e.getPacket() + " from " + e.getSenderId())
-);
+server.addPacketReceivedListener(e -> System.out.println("Server received (" + e.getProtocol() + "): " + e.getPacket() + " from " + e.getSenderId()));
 
 ```

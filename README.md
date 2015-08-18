@@ -3,9 +3,9 @@
 Socketify enables you to create client/server couples using TCP and/or UDP protocols.
 
 The library provides the following classes:
-* TcpClient and TcpServer for the TCP protocol.
-* UdpClient and UdpServer for the UDP protocol.
-* SocketifyClient and SocketifyServer for both protocols.
+* *TcpClient* and *TcpServer* for the TCP protocol.
+* *UdpClient* and *UdpServer* for the UDP protocol.
+* *SocketifyClient* and *SocketifyServer* for both protocols.
 
 All of those Client/Server couples share the same methods, so it's as easy to create a TCP and UDP couple as just a TCP one !
 

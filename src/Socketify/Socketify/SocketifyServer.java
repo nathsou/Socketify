@@ -17,6 +17,7 @@ import javax.swing.event.EventListenerList;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Created by Nathan on 12/08/2015.
@@ -130,7 +131,60 @@ public class SocketifyServer {
                 udpServer.sendToAll(obj);
                 break;
             default:
+                throw new IllegalArgumentException("Invalid type argument.");
+        }
+    }
+
+    public void sendTo(Object obj, int clientId, ProtocolType type) throws IOException {
+        switch (type) {
+            case TCP:
+                tcpServer.sendTo(obj, clientId);
                 break;
+            case UDP:
+                udpServer.sendTo(obj, clientId);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid type argument.");
+        }
+    }
+
+    public void sendToAllExcept(Object obj, int exceptId, ProtocolType type) throws IOException {
+        switch (type) {
+            case TCP:
+                tcpServer.sendToAllExcept(obj, exceptId);
+                break;
+            case UDP:
+                udpServer.sendToAllExcept(obj, exceptId);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid type argument.");
+        }
+    }
+
+    public void sendToAllExcept(Object obj, int[] exceptIds, ProtocolType type) throws IOException {
+        switch (type) {
+            case TCP:
+                tcpServer.sendToAllExcept(obj, exceptIds);
+                break;
+            case UDP:
+                udpServer.sendToAllExcept(obj, exceptIds);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid type argument.");
+        }
+    }
+
+
+    public void sendToAllExcept(Object obj, Collection<Integer> exceptIds, ProtocolType type) throws IOException {
+        switch (type) {
+            case TCP:
+                tcpServer.sendToAllExcept(obj, exceptIds);
+                break;
+            case UDP:
+                udpServer.sendToAllExcept(obj, exceptIds);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid type argument.");
         }
     }
 

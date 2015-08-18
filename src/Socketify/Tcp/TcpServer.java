@@ -19,6 +19,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -133,7 +134,7 @@ public class TcpServer extends Thread {
             }
     }
 
-    public void sendToAllExcept(Object obj, List<Integer> exceptIds) throws IOException {
+    public void sendToAllExcept(Object obj, Collection<Integer> exceptIds) throws IOException {
         for (TClient c : SocketifyServer.TClients)
             if (!exceptIds.contains(c.getId())) {
                 Packet packet = new Packet(obj, -1);

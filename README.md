@@ -12,10 +12,10 @@ All of those Client/Server couples share the same methods, so it's as easy to cr
 ```java
 
 //The SocketifyServer class accepts an optional 3rd argument representing the UDP port.
-SocketifyServer server = new SocketifyServer("localhost", 1621, 1789); //String address, int tcpPort, int udpPort (optional)
+SocketifyServer server = new SocketifyServer(1621, 1789); int tcpPort, int udpPort (optional)
 server.listen(); //Starts the server
 
-SocketifyClient client = new SocketifyClient(1621, 1789); //int tcpPort, int udpPort (optional)
+SocketifyClient client = new SocketifyClient("localhost", 1621, 1789); ////String address, int tcpPort, int udpPort (optional)
 
 client.connect();
 
